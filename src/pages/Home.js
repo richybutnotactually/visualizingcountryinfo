@@ -1,89 +1,180 @@
-import React, { useEffect, useState } from 'react';
-import Flag from '../components/Flag';  // Ensure the correct path
+import React, { useEffect, useState } from "react";
+import Flag from "../components/Flag";
+
+const filterOptions = [
+  "All",
+  "Asia",
+  "Europe",
+  "Africa",
+  "PopOver50M",
+  "PopUnder1M",
+];
 
 const Home = () => {
   const [countries, setCountries] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterOption, setFilterOption] = useState("All");
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
-    fetch('https://countries-api-abhishek.vercel.app/countries')
-      .then(res => res.json())
-      .then(data => setCountries(data.data)); // Access 'data' field
+    fetch("https://countries-api-abhishek.vercel.app/countries")
+      .then((res) => res.json())
+      .then((data) => setCountries(data.data));
   }, []);
 
-  // Handle search input change
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+  const handleSearchChange = (e) => setSearchTerm(e.target.value);
+
+  const handleFilterSelect = (option) => {
+    setFilterOption(option);
+    setShowDropdown(false);
   };
 
-  // Find the closest matching country based on partial search
-  const matchedCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
-  // If there are matched countries, use the first match or fallback to default country
-  const country = matchedCountries.length > 0
-    ? matchedCountries[0] // Show the closest match based on the search input
-    : countries.find(c => c.name === 'Afghanistan'); // Default to Afghanistan if no match
+  const filteredCountries = countries
+    .filter((country) =>
+      country.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .filter((country) => {
+      if (filterOption === "All") return true;
+      if (filterOption === "Asia") return country.region === "Asia";
+      if (filterOption === "Europe") return country.region === "Europe";
+      if (filterOption === "Africa") return country.region === "Africa";
+      if (filterOption === "PopOver50M") return country.population > 50000000;
+      if (filterOption === "PopUnder1M") return country.population < 1000000;
+      return true;
+    });
+
+  const country =
+    filteredCountries.length > 0
+      ? filteredCountries[0]
+      : countries.find((c) => c.name === "Afghanistan");
 
   return (
-    <div>
-      <input
-        type="text"
-        className="form-control mb-1"
-        placeholder="Search for a country..."
-        value={searchTerm}
-        onChange={handleSearchChange}
+    <div className="container">
+      <div
         style={{
-            maxWidth: '500px', // Set the max width for the input
-            margin: '0 auto',  // Center the input horizontally
-            display: 'block'   // Ensure the element is block-level for centering
-          }}
-      />
+          position: "relative",
+          marginBottom: "1rem",
+          display: "flex",
+          gap: "1rem",
+        }}
+      >
+        {/* Country Search Input */}
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Search for a country..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+        />
+
+        {/* Filter Dropdown */}
+        <div style={{ position: "relative", flex: "0 0 200px" }}>
+          <div
+            className="form-control d-flex justify-content-between align-items-center"
+            onClick={() => setShowDropdown(!showDropdown)}
+            style={{ cursor: "pointer" }}
+          >
+            {filterOption === "PopOver50M"
+              ? "Population > 50M"
+              : filterOption === "PopUnder1M"
+              ? "Population < 1M"
+              : filterOption}
+            <span style={{ marginLeft: "auto" }}>▼</span>
+          </div>
+
+          {showDropdown && (
+            <ul
+              className="list-group shadow border bg-white mt-1"
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                zIndex: 5,
+                maxHeight: "none",
+                overflowY: "visible",
+              }}
+            >
+              {filterOptions.map((opt) => (
+                <li
+                  key={opt}
+                  className="list-group-item list-group-item-action"
+                  onClick={() => handleFilterSelect(opt)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {opt === "PopOver50M"
+                    ? "Population > 50M"
+                    : opt === "PopUnder1M"
+                    ? "Population < 1M"
+                    : opt}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Country Details */}
       {country ? (
         <div>
           <h3 className="text-center">{country.name}</h3>
           <Flag flag={country.flag} name={country.name} />
           <div className="row">
-            {/* First Column */}
-            <div className="col-md-6">
-              <ul className="list-group my-3">
-                <li className="list-group-item"><strong>Capital:</strong> {country.capital}</li>
-                <li className="list-group-item"><strong>Region:</strong> {country.region}</li>
-                <li className="list-group-item"><strong>Subregion:</strong> {country.subregion}</li>
-                <li className="list-group-item"><strong>Population:</strong> {country.population.toLocaleString()}</li>
-                <li className="list-group-item"><strong>Area:</strong> {country.area.toLocaleString()} km²</li>
-              </ul>
-            </div>
-
-            {/* Second Column */}
             <div className="col-md-6">
               <ul className="list-group my-3">
                 <li className="list-group-item">
-                  <strong>Coordinates:</strong> {country.coordinates.latitude}, {country.coordinates.longitude}
+                  <strong>Capital:</strong> {country.capital}
                 </li>
-                <li className="list-group-item"><strong>Timezones:</strong> {country.timezones.join(', ')}</li>
-                <li className="list-group-item"><strong>Currency:</strong> {country.currency}</li>
-                <li className="list-group-item"><strong>Languages:</strong> {country.languages.join(', ')}</li>
-
-                {/* Insert borders in the same list */}
+                <li className="list-group-item">
+                  <strong>Region:</strong> {country.region}
+                </li>
+                <li className="list-group-item">
+                  <strong>Subregion:</strong> {country.subregion}
+                </li>
+                <li className="list-group-item">
+                  <strong>Population:</strong>{" "}
+                  {country.population.toLocaleString()}
+                </li>
+                <li className="list-group-item">
+                  <strong>Area:</strong> {country.area.toLocaleString()} km²
+                </li>
+              </ul>
+            </div>
+            <div className="col-md-6">
+              <ul className="list-group my-3">
+                <li className="list-group-item">
+                  <strong>Coordinates:</strong> {country.coordinates.latitude},{" "}
+                  {country.coordinates.longitude}
+                </li>
+                <li className="list-group-item">
+                  <strong>Timezones:</strong> {country.timezones.join(", ")}
+                </li>
+                <li className="list-group-item">
+                  <strong>Currency:</strong> {country.currency}
+                </li>
+                <li className="list-group-item">
+                  <strong>Languages:</strong> {country.languages.join(", ")}
+                </li>
                 {country.borders && country.borders.length > 0 && (
                   <li className="list-group-item">
                     <strong>Border Countries: </strong>
-                    {country.borders
-                      .map((border, index) => (
-                        <span key={index}>
-                          <button
-                            onClick={() => setSearchTerm(border)}  // Set search term to the border country
-                            className="btn btn-link text-decoration-none text-primary"
-                            style={{ background: 'none', border: 'none', padding: '0' }} // Remove button styles to make it look like a link
-                          >
-                            {border}
-                          </button>
-                          {/* Add a comma if it's not the last item */}
-                          {index < country.borders.length - 1 && ', '}
-                        </span>
-                      ))}
+                    {country.borders.map((border, index) => (
+                      <span key={index}>
+                        <button
+                          onClick={() => setSearchTerm(border)}
+                          className="btn btn-link text-decoration-none text-primary"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: "0",
+                          }}
+                        >
+                          {border}
+                        </button>
+                        {index < country.borders.length - 1 && ", "}
+                      </span>
+                    ))}
                   </li>
                 )}
               </ul>
